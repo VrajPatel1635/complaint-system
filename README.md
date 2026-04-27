@@ -1,272 +1,208 @@
-# 📋 Complaint Management System
+# Smart Complaint System
 
-A full-stack web application that allows users to register complaints and enables administrators to track, update, and resolve them efficiently.
+Live site: https://complaint-system.up.railway.app/
 
----
+A Spring Boot web application for registering and tracking complaints, with separate dashboards for Citizens and Admins.
 
-## 🚀 Features
+## Features
 
-### 👤 User Features
-- Register and log in securely
-- Submit new complaints with title, description, and category
-- Upload attachments/screenshots (optional)
-- Track real-time status of submitted complaints
-- Receive email/in-app notifications on status updates
-- View complaint history
+### Citizen
+- Register and log in (form-based authentication)
+- Submit a complaint (title, description, location, category)
+- View all your complaints
+- View complaint details with a status/update timeline
 
-### 🛡️ Admin Features
-- Secure admin dashboard
-- View all complaints with filters (status, category, date, priority)
-- Assign complaints to specific staff/departments
-- Update complaint status: `Pending → In Progress → Resolved → Closed`
-- Add internal notes or responses visible to the user
-- Generate reports and analytics
-- Manage users and roles
+### Admin
+- Admin dashboard with complaint counts by status
+- Manage complaints with pagination + filters (category + status)
+- View complaint details with full timeline
+- Update complaint status with remarks
+- Reports page with charts (status distribution, category breakdown, trends)
+- Export a date-range report to Excel (`.xlsx`)
 
----
+## Complaint statuses
 
-## 🧱 Tech Stack
+`PENDING` → `IN_PROGRESS` → `RESOLVED` / `REJECTED`
 
-| Layer       | Technology                        |
-|-------------|-----------------------------------|
-| Frontend    | React.js / HTML + CSS + JS        |
-| Backend     | Node.js + Express.js              |
-| Database    | MongoDB / PostgreSQL               |
-| Auth        | JWT (JSON Web Tokens)             |
-| File Upload | Multer + Cloudinary (optional)    |
-| Email       | Nodemailer / SendGrid             |
-| Deployment  | Docker + AWS / Heroku / Vercel    |
+Notes:
+- The service prevents skipping directly from `PENDING` to `RESOLVED`.
+- Once `RESOLVED` or `REJECTED`, the complaint is considered closed (no further updates allowed).
 
-> You may adapt the stack as per your project requirements.
+## Tech stack
 
----
+- Java 21
+- Spring Boot 3 (MVC + Security + Data JPA)
+- JSP + JSTL views (server-side rendering)
+- MySQL
+- Bootstrap 5 (CDN) + custom CSS/JS
+- Apache POI (Excel export)
 
-## 📁 Project Structure
+## Project structure
 
 ```
-complaint-management-system/
-│
-├── client/                     # Frontend (React or HTML)
-│   ├── public/
-│   └── src/
-│       ├── components/
-│       │   ├── Auth/           # Login, Register forms
-│       │   ├── User/           # Submit, Track complaints
-│       │   └── Admin/          # Dashboard, Complaint list
-│       ├── pages/
-│       ├── services/           # API calls (axios)
-│       └── App.js
-│
-├── server/                     # Backend (Node.js)
-│   ├── config/
-│   │   └── db.js               # Database connection
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── complaintController.js
-│   │   └── adminController.js
-│   ├── middlewares/
-│   │   ├── authMiddleware.js   # JWT verification
-│   │   └── roleMiddleware.js   # Admin role check
-│   ├── models/
-│   │   ├── User.js
-│   │   └── Complaint.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── complaintRoutes.js
-│   │   └── adminRoutes.js
-│   └── server.js
-│
-├── .env                        # Environment variables
-├── .gitignore
-├── package.json
-└── README.md
+.
+├─ pom.xml
+├─ mvnw
+├─ mvnw.cmd
+└─ src/
+   ├─ main/
+   │  ├─ java/
+   │  │  └─ com/project/complaintsystem/
+   │  │     ├─ config/        # Security + MVC config + role seeding
+   │  │     ├─ controller/    # MVC controllers (auth, user, admin)
+   │  │     ├─ dto/
+   │  │     ├─ enums/
+   │  │     ├─ exception/
+   │  │     ├─ model/         # JPA entities
+   │  │     ├─ repository/    # Spring Data JPA repos
+   │  │     ├─ security/      # CustomUserDetails + login success handler
+   │  │     ├─ service/
+   │  │     ├─ serviceImpl/
+   │  │     └─ util/
+   │  ├─ resources/
+   │  │  ├─ application.properties
+   │  │  └─ static/
+   │  │     ├─ css/style.css
+   │  │     └─ js/script.js
+   │  └─ webapp/
+   │     └─ WEB-INF/views/
+   │        ├─ auth/
+   │        ├─ user/
+   │        ├─ admin/
+   │        ├─ common/
+   │        └─ error/
+   └─ test/
+      └─ java/com/project/complaintsystem/
 ```
 
----
-
-## ⚙️ Installation & Setup
+## Run locally
 
 ### Prerequisites
-- Node.js v16+
-- MongoDB or PostgreSQL installed and running
-- npm or yarn
+- JDK 21
+- MySQL 8+
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/your-username/complaint-management-system.git
-cd complaint-management-system
+### 1) Configure database env vars
+
+This project reads its datasource settings from environment variables (see `src/main/resources/application.properties`).
+
+Required:
+- `MYSQLHOST`
+- `MYSQLPORT`
+- `MYSQLDATABASE`
+- `MYSQLUSER`
+- `MYSQLPASSWORD`
+
+Optional:
+- `PORT` (defaults to `8080`)
+
+PowerShell example:
+
+```powershell
+$env:MYSQLHOST = "localhost"
+$env:MYSQLPORT = "3306"
+$env:MYSQLDATABASE = "complaint_system"
+$env:MYSQLUSER = "root"
+$env:MYSQLPASSWORD = "your_password"
+$env:PORT = "8080"
 ```
 
-### 2. Install Dependencies
-```bash
-# Install server dependencies
-cd server
-npm install
+### 2) Make sure schema + seed data exist
 
-# Install client dependencies
-cd ../client
-npm install
+Important: JPA is configured with `spring.jpa.hibernate.ddl-auto=validate`, so the application expects the tables to already exist.
+
+At minimum you should ensure:
+- A `categories` row exists (otherwise the submit form will have no categories).
+- Roles are auto-seeded on startup (`ROLE_CITIZEN`, `ROLE_ADMIN`) once the `roles` table exists.
+
+Example category insert:
+
+```sql
+INSERT INTO categories (name, description) VALUES
+    ('Road', 'Road-related issues'),
+    ('Water', 'Water supply issues'),
+    ('Electricity', 'Electricity issues');
 ```
 
-### 3. Configure Environment Variables
-Create a `.env` file inside the `server/` directory:
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/complaint_db
-JWT_SECRET=your_jwt_secret_key
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_email_password
-CLOUDINARY_URL=your_cloudinary_url   # Optional for file uploads
+If you’re starting from scratch for local development, the simplest approach is to temporarily change `spring.jpa.hibernate.ddl-auto` from `validate` to `update` (or `create`) and then switch it back once your schema is in place.
+
+### 3) Start the app
+
+Windows:
+
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
-### 4. Run the Application
-
-#### Development Mode
-```bash
-# Start backend
-cd server
-npm run dev
-
-# Start frontend (in a new terminal)
-cd client
-npm start
-```
-
-#### Production Mode
-```bash
-# Build frontend
-cd client
-npm run build
-
-# Start server
-cd ../server
-npm start
-```
-
----
-
-## 🔐 API Endpoints
-
-### Auth Routes
-| Method | Endpoint              | Description           | Access  |
-|--------|-----------------------|-----------------------|---------|
-| POST   | `/api/auth/register`  | Register new user     | Public  |
-| POST   | `/api/auth/login`     | User login            | Public  |
-| GET    | `/api/auth/profile`   | Get logged-in profile | Private |
-
-### Complaint Routes (User)
-| Method | Endpoint                    | Description              | Access        |
-|--------|-----------------------------|--------------------------|---------------|
-| POST   | `/api/complaints`           | Submit a new complaint   | User/Admin    |
-| GET    | `/api/complaints/my`        | Get my complaints        | User          |
-| GET    | `/api/complaints/:id`       | Get complaint by ID      | User/Admin    |
-
-### Admin Routes
-| Method | Endpoint                         | Description                    | Access |
-|--------|----------------------------------|--------------------------------|--------|
-| GET    | `/api/admin/complaints`          | Get all complaints             | Admin  |
-| PUT    | `/api/admin/complaints/:id`      | Update status/assign/respond   | Admin  |
-| DELETE | `/api/admin/complaints/:id`      | Delete a complaint             | Admin  |
-| GET    | `/api/admin/users`               | Get all users                  | Admin  |
-
----
-
-## 🔄 Complaint Lifecycle
-
-```
-User Submits Complaint
-        │
-        ▼
-   [Pending] ──────────────────────────────────┐
-        │                                       │
-        ▼ (Admin assigns/acknowledges)          │
-  [In Progress] ─────────────────────────────┐ │
-        │                                     │ │
-        ▼ (Admin resolves)                    │ │
-   [Resolved] ──(User unsatisfied)──► [Reopened]│
-        │                                       │
-        ▼ (Admin closes)                        │
-    [Closed] ◄──────────────────────────────────┘
-```
-
----
-
-## 👥 User Roles
-
-| Role  | Permissions                                              |
-|-------|----------------------------------------------------------|
-| User  | Register, login, submit complaints, view own complaints  |
-| Admin | All user permissions + manage/update/delete all complaints, manage users |
-
----
-
-## 📊 Admin Dashboard Overview
-
-- **Total Complaints** — Count by status (Pending, In Progress, Resolved)
-- **Recent Complaints** — Latest submissions table
-- **Category Breakdown** — Pie/Bar chart by complaint type
-- **Response Time Metrics** — Average resolution time
-- **User Activity** — Most active users / departments
-
----
-
-## 📬 Notifications
-
-- **Email Notification** sent to user when:
-    - Complaint is received (confirmation)
-    - Status is updated by admin
-    - Complaint is resolved or closed
-- **In-App Notification** badge on the user dashboard
-
----
-
-## 🧪 Running Tests
+macOS/Linux:
 
 ```bash
-# Backend unit/integration tests
-cd server
-npm test
-
-# Frontend tests
-cd client
-npm test
+./mvnw spring-boot:run
 ```
 
----
+Then open:
+- `http://localhost:8080/login`
 
-## 🐳 Docker Setup (Optional)
+## Usage
+
+- Register at `/register` and choose a role:
+    - `Citizen` (access: `/user/**`)
+    - `Admin` (access: `/admin/**`)
+- After login, you’ll be redirected based on role.
+
+## Demo accounts
+
+These accounts are meant for demo/testing and may be reset at any time.
+
+- Citizen: `rohan@gmail.com` / `password123`
+- Admin: `admin@smartcomplaint.com` / `admin123`
+
+## Admin report export
+
+The Excel export endpoint is:
+
+`/admin/reports/download?from=yyyy-MM-dd&to=yyyy-MM-dd`
+
+Example:
+
+`/admin/reports/download?from=2026-01-01&to=2026-01-31`
+
+## Build
+
+Windows:
+
+```powershell
+.\mvnw.cmd -DskipTests package
+```
+
+macOS/Linux:
 
 ```bash
-# Build and run with Docker Compose
-docker-compose up --build
+./mvnw -DskipTests package
 ```
 
-Make sure your `docker-compose.yml` includes services for `client`, `server`, and `mongodb`.
+## Tests
 
----
+Windows:
 
-## 🤝 Contributing
+```powershell
+.\mvnw.cmd test
+```
 
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+macOS/Linux:
 
----
+```bash
+./mvnw test
+```
 
-## 📄 License
+Note: tests load the Spring context and will require valid MySQL env vars + an accessible database.
 
-This project is licensed under the [MIT License](LICENSE).
+## Deployment
 
----
+The live app is deployed on Railway:
+https://complaint-system.up.railway.app/
 
-## 📞 Contact
+Railway typically provides `PORT` and can provide MySQL connection env vars (or you can set them in the Railway service settings).
 
-For questions, issues, or suggestions:
-- 📧 Email: your-email@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/complaint-management-system/issues)
+> “Great things in business are never done by one person; they’re done by a team of people.”
 
----
-
-> ⭐ If you find this project helpful, please give it a star on GitHub!
+Made with love by the team.
