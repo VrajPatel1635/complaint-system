@@ -255,7 +255,7 @@
             if (!Number.isFinite(year) || !Number.isFinite(month)) return;
 
             try {
-                const response = await fetch(`/admin/reports/daily-trends?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`);
+                const response = await fetch('/admin/reports/daily-trends?year=' + encodeURIComponent(year) + '&month=' + encodeURIComponent(month));
                 if (!response.ok) {
                     throw new Error(`Request failed: ${response.status}`);
                 }
