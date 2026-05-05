@@ -26,6 +26,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import com.project.complaintsystem.model.Complaint;
 
@@ -166,11 +167,24 @@ public class AdminController {
         model.addAttribute("monthlyStatsJson",
                 mapper.writeValueAsString(adminService.getDailyTrendsCurrentMonth()));
 
+        model.addAttribute("currentYearMonth", YearMonth.now().toString());
+
         // ⚠️ KEEP (used for filter + CSV)
         model.addAttribute("trendStatsJson",
                 mapper.writeValueAsString(adminService.getComplaintTrends()));
 
         return "admin/reports";
+    }
+
+    @GetMapping("/reports/daily-trends")
+    @ResponseBody
+    public Map<String, Long> getDailyTrendsForMonth(@RequestParam int year, @RequestParam int month) {
+
+        if (month < 1 || month > 12) {
+            return Collections.emptyMap();
+        }
+
+        return Optional.ofNullable(adminService.getDailyTrendsByMonth(year, month)).orElseGet(Collections::emptyMap);
     }
 
     // ================= DOWNLOAD CSV =================

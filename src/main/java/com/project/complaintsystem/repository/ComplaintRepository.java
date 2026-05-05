@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -108,4 +109,14 @@ GROUP BY FUNCTION('DATE', c.createdAt)
 ORDER BY FUNCTION('DATE', c.createdAt)
 """)
 List<Object[]> countComplaintsDailyCurrentMonth();
+
+@Query("""
+SELECT FUNCTION('DATE', c.createdAt), COUNT(c)
+FROM Complaint c
+WHERE FUNCTION('MONTH', c.createdAt) = :month
+AND FUNCTION('YEAR', c.createdAt) = :year
+GROUP BY FUNCTION('DATE', c.createdAt)
+ORDER BY FUNCTION('DATE', c.createdAt)
+""")
+List<Object[]> countComplaintsDailyForMonth(@Param("year") int year, @Param("month") int month);
 }

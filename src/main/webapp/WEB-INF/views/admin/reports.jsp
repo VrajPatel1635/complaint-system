@@ -18,6 +18,9 @@
     .main-line-chart {
         height: 350px;
     }
+    .trend-month-input {
+        max-width: 170px;
+    }
 </style>
 
 <jsp:include page="/WEB-INF/views/common/navbar.jsp" />
@@ -102,7 +105,15 @@
                         <div class="auth-card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="text-muted text-uppercase tracking-wider small fw-bold mb-0">Daily Complaint Submissions</h6>
-                                <i class="bi bi-graph-up text-muted"></i>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input
+                                            type="month"
+                                            id="trendMonth"
+                                            class="form-control form-control-sm bg-light border-0 shadow-none px-3 trend-month-input"
+                                            value="${currentYearMonth}"
+                                            aria-label="Select month">
+                                    <i class="bi bi-graph-up text-muted"></i>
+                                </div>
                             </div>
                             <div class="chart-container main-line-chart">
                                 <canvas id="lineChart"></canvas>
@@ -189,7 +200,7 @@
         });
 
         // ------------------ LINE CHART (MONTHLY) ------------------ //
-        new Chart(document.getElementById("lineChart"), {
+        const lineChart = new Chart(document.getElementById("lineChart"), {
             type: 'line',
             data: {
                 labels: Object.keys(monthlyData),
@@ -231,6 +242,41 @@
                 }
             }
         });
+
+        async function refreshLineChartForSelectedMonth() {
+            const monthInput = document.getElementById("trendMonth");
+            if (!monthInput || !monthInput.value) return;
+
+            const parts = monthInput.value.split('-');
+            if (parts.length !== 2) return;
+
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            if (!Number.isFinite(year) || !Number.isFinite(month)) return;
+
+            try {
+                const response = await fetch(`/admin/reports/daily-trends?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`);
+                if (!response.ok) {
+                    throw new Error(`Request failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+
+                lineChart.data.labels = labels;
+                lineChart.data.datasets[0].data = values;
+                lineChart.update();
+            } catch (e) {
+                console.error(e);
+                alert("Unable to load selected month trend.");
+            }
+        }
+
+        const trendMonthInput = document.getElementById("trendMonth");
+        if (trendMonthInput) {
+            trendMonthInput.addEventListener('change', refreshLineChartForSelectedMonth);
+        }
 
         // ------------------ FILTER LOGIC ------------------ //
         function checkDates() {

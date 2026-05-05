@@ -37,4 +37,7 @@ public interface AdminService {
 
     // 📆 Line Chart → Monthly Trends
     Map<String, Long> getDailyTrendsCurrentMonth();
+
+    // 📆 Line Chart → Daily Trends for Selected Month
+    Map<String, Long> getDailyTrendsByMonth(int year, int month);
 }

@@ -140,4 +140,20 @@ public class AdminServiceImpl implements AdminService {
 
         return map;
     }
+
+    @Override
+    public Map<String, Long> getDailyTrendsByMonth(int year, int month) {
+
+        List<Object[]> result = complaintRepository.countComplaintsDailyForMonth(year, month);
+        Map<String, Long> map = new LinkedHashMap<>();
+
+        for (Object[] row : result) {
+            String date = row[0].toString();  // yyyy-MM-dd
+            Long count = ((Number) row[1]).longValue();
+
+            map.put(date, count);
+        }
+
+        return map;
+    }
 }
